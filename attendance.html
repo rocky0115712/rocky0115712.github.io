@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>練習出欠入力 | Coro Forza</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .attendance-container {
+            max-width: 100%;
+            overflow-x: auto;
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-top: 2rem;
+            position: relative;
+        }
+
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        .attendance-table th,
+        .attendance-table td {
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid #f3f4f6;
+        }
+
+        .attendance-table th {
+            background: var(--bg-gray);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .attendance-table .col-name {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 2;
+            text-align: left;
+            font-weight: bold;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .attendance-table th.col-name {
+            background: var(--bg-gray);
+            z-index: 3;
+        }
+
+        .status-cell {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transition: background 0.2s;
+        }
+
+        .status-cell:hover {
+            background-color: #fef2f2;
+        }
+
+        .status-o {
+            color: #10b981;
+        }
+
+        /* ◯ */
+        .status-t {
+            color: #f59e0b;
+        }
+
+        /* △ */
+        .status-x {
+            color: #ef4444;
+        }
+
+        /* ✕ */
+        .status-u {
+            color: #d1d5db;
+        }
+
+        /* - */
+
+        .add-member-form {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: var(--bg-gray);
+            border-radius: var(--radius);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+    <header id="header" style="position: relative; background: white; box-shadow: var(--shadow);">
+        <div class="container header-container">
+            <a href="index.html" class="logo">Coro Forza</a>
+            <a href="index.html" class="btn" style="border: 1px solid #d1d5db;">ホームに戻る</a>
+        </div>
+    </header>
+
+    <div class="container" style="padding-top: 2rem; padding-bottom: 4rem;">
+        <h1 style="text-align: center; margin-bottom: 1rem; font-size: 2rem;">練習出欠表</h1>
+        <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">セルをクリックして出欠を切り替えてください ( ◯ &rarr; △
+            &rarr; ✕ &rarr; - )</p>
+
+        <div class="row" style="margin-bottom: 2rem;">
+            <div class="add-member-form">
+                <select id="new-member-part" class="form-control" style="flex: 0 0 100px; margin-right: 0.5rem;">
+                    <option value="S">Sopran</option>
+                    <option value="A">Alto</option>
+                    <option value="T">Tenor</option>
+                    <option value="B">Bass</option>
+                </select>
+                <input type="text" id="new-member-name" class="form-control" placeholder="新しいメンバー名"
+                    style="flex: 1; max-width: 300px; margin-right: 0.5rem;">
+                <button onclick="addMember()" class="btn btn-primary">メンバー追加</button>
+            </div>
+        </div>
+
+        <div class="attendance-container">
+            <table class="attendance-table" id="attendance-table">
+                <!-- JS populated -->
+            </table>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        lucide.createIcons();
+        renderAttendance();
+
+        function renderAttendance() {
+            const table = document.getElementById('attendance-table');
+            const schedule = DataManager.getSchedule();
+            const members = DataManager.getMembers(); // Returns objects {name, part}
+            const attendance = DataManager.getAttendance();
+
+            if (schedule.length === 0) {
+                table.innerHTML = '<tr><td colspan="100">スケジュールが登録されていません。管理者ページからスケジュールを追加してください。</td></tr>';
+                return;
+            }
+
+            // Header Row
+            let html = '<thead><tr><th class="col-name">名前</th>';
+            schedule.forEach(s => {
+                html += `<th>${s.date}<br><span style="font-size: 0.8em; font-weight: normal;">${s.location}</span></th>`;
+            });
+            html += '</tr></thead>';
+
+            // Body Rows (Grouped by Part)
+            html += '<tbody>';
+            const parts = ['S', 'A', 'T', 'B'];
+            const partNames = { S: 'Soprano', A: 'Alto', T: 'Tenor', B: 'Bass' };
+
+            parts.forEach(part => {
+                // Section Header
+                html += `<tr style="background:#f3f4f6;"><td colspan="${schedule.length + 1}" style="font-weight:bold; text-align:left; padding-left:1rem;">${partNames[part]}</td></tr>`;
+
+                // Filter members for this part
+                const partMembers = members.filter(m => m.part === part);
+
+                partMembers.forEach(member => {
+                    html += `<tr><td class="col-name" style="padding-left: 2rem;">${member.name}</td>`;
+                    schedule.forEach(s => {
+                        const key = `${member.name}_${s.date}`;
+                        const status = attendance[key] || '-';
+                        let display = '-';
+                        let cls = 'status-u';
+
+                        if (status === 'O') { display = '◯'; cls = 'status-o'; }
+                        else if (status === 'T') { display = '△'; cls = 'status-t'; }
+                        else if (status === 'X') { display = '✕'; cls = 'status-x'; }
+
+                        html += `<td class="status-cell ${cls}" onclick="toggleStatus('${member.name}', '${s.date}')">${display}</td>`;
+                    });
+                    html += '</tr>';
+                });
+            });
+            html += '</tbody>';
+
+            table.innerHTML = html;
+        }
+
+        function toggleStatus(member, date) {
+            const key = `${member}_${date}`;
+            const current = DataManager.getAttendance()[key] || '-';
+            let next = 'O';
+            if (current === 'O') next = 'T';
+            else if (current === 'T') next = 'X';
+            else if (current === 'X') next = '-';
+
+            DataManager.updateAttendance(key, next);
+            renderAttendance();
+        }
+
+        function addMember() {
+            const name = document.getElementById('new-member-name').value;
+            const part = document.getElementById('new-member-part').value;
+
+            if (name && part) {
+                const members = DataManager.getMembers();
+                // Check duplicate by name
+                if (!members.some(m => m.name === name)) {
+                    members.push({ name, part });
+                    DataManager.saveMembers(members);
+                    document.getElementById('new-member-name').value = '';
+                    renderAttendance();
+                } else {
+                    alert('その名前は既に存在します');
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
