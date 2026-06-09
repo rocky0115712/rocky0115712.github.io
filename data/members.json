@@ -1,42 +1,47 @@
 {
   "members": [
     {
-      "id": "m01",
+      "id": "C",
+      "name": "団員A",
+      "part": "Soprano 1"
+    },
+    {    {
+      "id": "S1",
       "name": "団員A",
       "part": "Soprano 1"
     },
     {
-      "id": "m02",
+      "id": "S2",
       "name": "団員B",
       "part": "Soprano 2"
     },
     {
-      "id": "m03",
+      "id": "A1",
       "name": "団員C",
       "part": "Alto 1"
     },
     {
-      "id": "m04",
+      "id": "A2",
       "name": "団員D",
       "part": "Alto 2"
     },
     {
-      "id": "m05",
+      "id": "T1",
       "name": "団員E",
       "part": "Tenor 1"
     },
     {
-      "id": "m06",
+      "id": "T2",
       "name": "団員F",
       "part": "Tenor 2"
     },
     {
-      "id": "m07",
+      "id": "B1",
       "name": "団員G",
       "part": "Bass 1"
     },
     {
-      "id": "m08",
+      "id": "B2",
       "name": "団員H",
       "part": "Bass 2"
     }
